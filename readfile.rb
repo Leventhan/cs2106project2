@@ -10,8 +10,8 @@ File.open(ARGV[0], "r") do |file|
   p.initialize_page_tables(line)
 end
 
-# TODO: open second file
-
-
-
-
+File.open(ARGV[1], "r") do |file|
+  line = file.gets
+  results = p.translate_virtual_addresses(line)
+  p results.join(" ")
+end

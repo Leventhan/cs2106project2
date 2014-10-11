@@ -2,11 +2,10 @@
 load 'segment_table.rb'
 load 'page_table.rb'
 load 'page.rb'
+load 'virtual_address.rb'
 
 class PhysicalMemory
   attr_accessor :memory, :count, :bitmap, :segment_table
-  TEST_STRING1 = "2 2048"
-  TEST_STRING2 = "0 2 512 1 2 -1"
 
   def initialize
     @memory = Array.new(1024)
@@ -14,6 +13,67 @@ class PhysicalMemory
     @bitmap = Array.new(1024, 0) # initialize bitmap
     @segment_table = SegmentTable.new
     append_frame(@segment_table) # Allocate first frame to segment table
+  end
+
+  def translate_virtual_addresses(input_string)
+    args = input_string.split(" ")
+    raise Exception.new("Odd number of Segment Table initialization string!") if args.size.odd?
+
+    results = []
+    (args.size/2).times do |index|
+      op = args[(index*2)].to_i
+      virtual_address = args[(index*2)+1].to_i
+
+      if op == 0
+        results << read_virtual_address(virtual_address)
+      elsif op == 1
+        results << write_virtual_address(virtual_address)
+      else
+        raise Exception.new("op must be either 0(read) or 1(write)")
+      end
+    end
+
+    return results
+  end
+
+  # TODO: see section "The address translation process", use Virtual_address.rb
+  def read_virtual_address(virtual_address)
+    v = VirtualAddress.new(virtual_address)
+    p "Reading #{virtual_address} #{v.binary_string} #{v.segment} #{v.page} #{v.w}"
+    st_entry = @segment_table.entries[v.segment]
+    return "pf" if st_entry == -1
+    return "err" if st_entry == 0
+
+    pt_address = @segment_table.entries[v.segment]
+    page_table = get_frame(pt_address)
+    pt_entry = page_table.entries[v.page]
+    return "pf" if pt_entry == -1
+    return "err" if pt_entry == 0
+
+    return pt_entry + v.w
+  end
+
+  def write_virtual_address(virtual_address)
+    v = VirtualAddress.new(virtual_address)
+    p "Writing #{virtual_address} #{v.binary_string} #{v.segment} #{v.page} #{v.w}"
+    st_entry = @segment_table.entries[v.segment]
+    return "pf" if st_entry == -1
+
+    pt_address = st_entry
+    if st_entry == 0
+      pt_address = get_free_physical_address(PageTable.new)
+      insert_pt_of_segment_at_physical_address(v.segment, pt_address)
+    end
+
+    page_table = get_frame(pt_address)
+    pt_entry = page_table.entries[v.page]
+    if pt_entry == 0
+      page_address = get_free_physical_address(Page.new)
+      insert_page_of_segment_at_physical_address(v.page, v.segment, page_address)
+      return page_address + v.w
+    else
+      return pt_entry + v.w
+    end
   end
 
   def initialize_segment_table(input_string)
@@ -56,9 +116,33 @@ class PhysicalMemory
     set_frame(physical_address, Page.new) if physical_address != -1
   end
 
+  def get_free_physical_address(f)
+    return frame_id_to_physical_address(get_free_frame_id(f))
+  end
+
+  def get_free_frame_id(f)
+    frame_id = -1
+    if f.is_a?(Page)
+      @bitmap.each do |bit|
+        frame_id +=1
+        # p "checking bit #{bit} at frame #{frame_id} == 0 ? => #{bit == 0} "
+        return frame_id if bit == 0
+      end
+    elsif f.is_a?(PageTable)
+      @bitmap.each do |bit|
+        frame_id +=1
+        return frame_id if bit == 0 && @bitmap[frame_id+1] == 0 # finds two consecutive free frames
+      end
+    end
+  end
+
   def append_frame(f)
-    # TODO: handle holes, find leftmost free address
-    start_address = frame_id_to_physical_address(@count)
+    if f.is_a?(SegmentTable)
+      free_frame_id = @count
+    else
+      free_frame_id = get_free_frame_id(f)
+    end
+    start_address = frame_id_to_physical_address(free_frame_id)
     set_frame(start_address, f)
   end
 

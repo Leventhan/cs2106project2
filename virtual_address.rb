@@ -5,13 +5,13 @@
 # The leading 4 bits of the VA are unused.
 
 class VirtualAddress
-  attr_accessor :integer, :binary_string, :s, :p, :w
+  attr_accessor :integer, :binary_string, :segment, :page, :w
 
   def initialize(i)
     @integer = i
     @binary_string = i.to_s(2).rjust(29, "0")
-    @s = @binary_string.slice(0, 9).to_i(2)
-    @p = @binary_string.slice(10, 10).to_i(2)
+    @segment = @binary_string.slice(0, 9).to_i(2)
+    @page = @binary_string.slice(10, 10).to_i(2)
     @w = @binary_string.slice(19, 9).to_i(2)
   end
 end
