@@ -11,7 +11,7 @@
 class PageTable
   attr_accessor :entries
 
-  def initialize(segment_id)
+  def initialize
     @entries = Array.new(1024, 0)
   end
 end

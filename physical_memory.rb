@@ -5,6 +5,8 @@ load 'page.rb'
 
 class PhysicalMemory
   attr_accessor :memory, :count, :bitmap, :segment_table
+  TEST_STRING1 = "2 2048"
+  TEST_STRING2 = "0 2 512 1 2 -1"
 
   def initialize
     @memory = Array.new(1024)
@@ -14,7 +16,7 @@ class PhysicalMemory
     append_frame(@segment_table) # Allocate first frame to segment table
   end
 
-  def self.initialize_segment_table(input_string)
+  def initialize_segment_table(input_string)
     # For example, 15 512 means that the PT of segment 15 starts at address 512 (in terms of PM frames, starts at frame 1)
     args = input_string.split(" ")
     raise Exception.new("Odd number of Segment Table initialization string!") if args.size.odd?
@@ -31,7 +33,7 @@ class PhysicalMemory
       set_frame(physical_address, PageTable.new)
   end
 
-  def self.initialize_page_tables(input_string)
+  def initialize_page_tables(input_string)
     # For example, 7 13 4096 means that page 7 of segment 13 starts at address 4096. That is, PT[ST[13]+7] = 4096.
     args = input_string.split(" ")
     raise Exception.new("Number of Page Table initialization string not a multiple of three!") if args.size % 3 != 0
