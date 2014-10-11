@@ -30,7 +30,7 @@ class PhysicalMemory
   def insert_pt_of_segment_at_physical_address(segment, physical_address)
       p "Set PT of segment #{segment} to start at #{physical_address}"
       @segment_table.entries[segment] = physical_address
-      set_frame(physical_address, PageTable.new)
+      set_frame(physical_address, PageTable.new) if physical_address != -1
   end
 
   def initialize_page_tables(input_string)
@@ -49,11 +49,11 @@ class PhysicalMemory
   def insert_page_of_segment_at_physical_address(page, segment, physical_address)
     raise Exception.new("Page Table for segment #{segment} does not exist") if @segment_table.entries[segment] == 0
 
-    p "Set Page #{page} of segment #{segment} to start at #{page_address}"
     pt_address = @segment_table.entries[segment]
+    p "Set Page #{page} of segment #{segment} (PT address #{pt_address}) to start at #{physical_address}"
     page_table = get_frame(pt_address)
-    page_table[page] = physical_address
-    set_frame(page_address, Page.new)
+    page_table.entries[page] = physical_address
+    set_frame(physical_address, Page.new) if physical_address != -1
   end
 
   def append_frame(f)
@@ -63,7 +63,7 @@ class PhysicalMemory
   end
 
   def get_frame(physical_address)
-    frame_id = physical_address_to_frame_id(physical_address_to_frame_id)
+    frame_id = physical_address_to_frame_id(physical_address)
     return @memory[frame_id]
   end
 
