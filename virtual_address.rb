@@ -10,8 +10,14 @@ class VirtualAddress
   def initialize(i)
     @integer = i
     @binary_string = i.to_s(2).rjust(29, "0")
-    @segment = @binary_string.slice(0, 9).to_i(2)
-    @page = @binary_string.slice(10, 10).to_i(2)
-    @w = @binary_string.slice(19, 9).to_i(2)
+
+    @w = @binary_string.split(//).last(9).join.to_i(2)
+    @binary_string = @binary_string.slice(0..-10)
+
+    @page = @binary_string.split(//).last(10).join.to_i(2)
+    @binary_string = @binary_string.slice(0..-11)
+
+    @segment = @binary_string.split(//).last(9).join.to_i(2)
+
   end
 end
