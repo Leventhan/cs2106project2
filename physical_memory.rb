@@ -58,7 +58,6 @@ class PhysicalMemory
     p "Writing #{virtual_address} #{v.binary_string} #{v.segment} #{v.page} #{v.w}"
     st_entry = @segment_table.entries[v.segment]
     return "pf" if st_entry == -1
-
     pt_address = st_entry
     if st_entry == 0
       pt_address = get_free_physical_address(PageTable.new)
@@ -72,6 +71,7 @@ class PhysicalMemory
       insert_page_of_segment_at_physical_address(v.page, v.segment, page_address)
       return page_address + v.w
     else
+      return "pf" if pt_entry == -1
       return pt_entry + v.w
     end
   end
