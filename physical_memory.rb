@@ -1,4 +1,5 @@
 #!/usr/bin/env ruby
+require 'lrucache'
 load 'segment_table.rb'
 load 'page_table.rb'
 load 'page.rb'
@@ -13,6 +14,21 @@ class PhysicalMemory
     @bitmap = Array.new(1024, 0) # initialize bitmap
     @segment_table = SegmentTable.new
     append_frame(@segment_table) # Allocate first frame to segment table
+  end
+
+  def translate_virtual_addresses_with_lru(input_string)
+    args = input_string.split(" ")
+    raise Exception.new("Odd number of Segment Table initialization string!") if args.size.odd?
+    results = []
+    cache = LRUCache.new(:max_size => 4)
+    binding.pry
+    (args.size/2).times do |index|
+
+      # TODO
+
+
+    end
+    return results
   end
 
   def translate_virtual_addresses(input_string)
@@ -39,7 +55,7 @@ class PhysicalMemory
   # TODO: see section "The address translation process", use Virtual_address.rb
   def read_virtual_address(virtual_address)
     v = VirtualAddress.new(virtual_address)
-    p "Reading #{virtual_address} #{v.binary_string} #{v.segment} #{v.page} #{v.w}"
+    # p "Reading #{virtual_address} #{v.binary_string} #{v.segment} #{v.page} #{v.w}"
     st_entry = @segment_table.entries[v.segment]
     return "pf" if st_entry == -1
     return "err" if st_entry == 0
@@ -55,7 +71,7 @@ class PhysicalMemory
 
   def write_virtual_address(virtual_address)
     v = VirtualAddress.new(virtual_address)
-    p "Writing #{virtual_address} #{v.binary_string} #{v.segment} #{v.page} #{v.w}"
+    # p "Writing #{virtual_address} #{v.binary_string} #{v.segment} #{v.page} #{v.w}"
     st_entry = @segment_table.entries[v.segment]
     return "pf" if st_entry == -1
     pt_address = st_entry
@@ -88,7 +104,7 @@ class PhysicalMemory
   end
 
   def insert_pt_of_segment_at_physical_address(segment, physical_address)
-      p "Set PT of segment #{segment} to start at #{physical_address}"
+      # p "Set PT of segment #{segment} to start at #{physical_address}"
       @segment_table.entries[segment] = physical_address
       set_frame(physical_address, PageTable.new) if physical_address != -1
   end
@@ -110,7 +126,7 @@ class PhysicalMemory
     raise Exception.new("Page Table for segment #{segment} does not exist") if @segment_table.entries[segment] == 0
 
     pt_address = @segment_table.entries[segment]
-    p "Set Page #{page} of segment #{segment} (PT address #{pt_address}) to start at #{physical_address}"
+    # p "Set Page #{page} of segment #{segment} (PT address #{pt_address}) to start at #{physical_address}"
     page_table = get_frame(pt_address)
     page_table.entries[page] = physical_address
     set_frame(physical_address, Page.new) if physical_address != -1

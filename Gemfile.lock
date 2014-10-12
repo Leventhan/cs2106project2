@@ -1,0 +1,12 @@
+GEM
+  remote: https://rubygems.org/
+  specs:
+    PriorityQueue (0.1.2)
+    lrucache (0.1.4)
+      PriorityQueue (~> 0.1.2)
+
+PLATFORMS
+  ruby
+
+DEPENDENCIES
+  lrucache
