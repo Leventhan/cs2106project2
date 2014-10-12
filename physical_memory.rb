@@ -1,5 +1,5 @@
 #!/usr/bin/env ruby
-require 'lrucache'
+load 'cache.rb'
 load 'segment_table.rb'
 load 'page_table.rb'
 load 'page.rb'
@@ -20,8 +20,7 @@ class PhysicalMemory
     args = input_string.split(" ")
     raise Exception.new("Odd number of Segment Table initialization string!") if args.size.odd?
     results = []
-    cache = LRUCache.new(:max_size => 4)
-    binding.pry
+    # cache = Cache.new
     (args.size/2).times do |index|
 
       # TODO
