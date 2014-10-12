@@ -15,10 +15,10 @@ File.open(ARGV[1], "r") do |file|
   results = p.translate_virtual_addresses(line)
   p results.join(" ")
 
-  # results2 = p.translate_virtual_addresses_with_lru(line)
-  # p results2.join(" ")
+  results2 = p.translate_virtual_addresses_with_lru(line)
+  p results2.join(" ")
 
   destination_path = File.dirname(file.path)+ "/A0099317U.txt"
   File.open(destination_path, 'w') { |file| file.write(results.join(" "))}
-  # File.open(destination_path, 'a') { |file| file.write(results2.join(" "))}
+  File.open(destination_path, 'a') { |file| file.write("\n" + results2.join(" "))}
 end

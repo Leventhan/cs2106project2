@@ -3,16 +3,19 @@ require 'lrucache'
 
 class Cache
   def initialize
-    @cache = LRUCache.new(:max_size => 4,
-                          :eviction_handler => lambda { |value| p "#{value} was evicted!" })
+    @cache = LRUCache.new(:max_size => 4)
   end
 
   def in_cache?(elem)
     elements.include? elem
   end
 
-  def store(elem)
-    @cache.store(elem, elem)
+  def fetch(s, p)
+    @cache.fetch("#{s} #{p}")
+  end
+
+  def store(s, p, pt_entry)
+    @cache.store("#{s} #{p}", pt_entry)
   end
 
   def elements

@@ -20,14 +20,87 @@ class PhysicalMemory
     args = input_string.split(" ")
     raise Exception.new("Odd number of Segment Table initialization string!") if args.size.odd?
     results = []
-    # cache = Cache.new
+
+    cache = Cache.new
+
     (args.size/2).times do |index|
+      op = args[(index*2)].to_i
+      virtual_address = args[(index*2)+1].to_i
 
-      # TODO
-
-
+      if op == 0
+        results = results + read_virtual_address_with_lru(virtual_address, cache)
+      elsif op == 1
+        results = results + write_virtual_address_with_lru(virtual_address, cache)
+      else
+        raise Exception.new("op must be either 0(read) or 1(write)")
+      end
     end
     return results
+  end
+
+  def read_virtual_address_with_lru(virtual_address, cache)
+    v = VirtualAddress.new(virtual_address)
+    # p "Reading #{virtual_address} #{v.binary_string} #{v.segment} #{v.page} #{v.w}"
+
+    hit_or_miss = ""
+    pt_entry = cache.fetch(v.segment, v.page)
+    # p "Fetched pt entry: #{pt_entry}, nil?: #{pt_entry.nil?}"
+
+    if pt_entry.nil?
+      hit_or_miss = "m"
+
+      st_entry = @segment_table.entries[v.segment]
+      return ["pf"] if st_entry == -1
+      return ["err"] if st_entry == 0
+
+      pt_address = @segment_table.entries[v.segment]
+      page_table = get_frame(pt_address)
+      pt_entry = page_table.entries[v.page]
+    else
+      hit_or_miss = "h"
+    end
+
+    return ["pf"] if pt_entry == -1
+    return ["err"] if pt_entry == 0
+
+    return [hit_or_miss, pt_entry + v.w]
+  end
+
+  def write_virtual_address_with_lru(virtual_address, cache)
+    v = VirtualAddress.new(virtual_address)
+    # p "Writing #{virtual_address} #{v.binary_string} #{v.segment} #{v.page} #{v.w}"
+
+    hit_or_miss = ""
+    pt_entry = cache.fetch(v.segment, v.page)
+    # p "Fetched pt entry: #{pt_entry}, nil?: #{pt_entry.nil?}"
+
+    if pt_entry.nil?
+      hit_or_miss = "m"
+
+      st_entry = @segment_table.entries[v.segment]
+      # p "(ST entry = #{st_entry})"
+      return ["pf"] if st_entry == -1
+      pt_address = st_entry
+      if st_entry == 0
+        pt_address = get_free_physical_address(PageTable.new)
+        insert_pt_of_segment_at_physical_address(v.segment, pt_address)
+      end
+
+      page_table = get_frame(pt_address)
+      pt_entry = page_table.entries[v.page]
+    else
+      hit_or_miss = "h"
+    end
+
+    # p "(PT entry = #{pt_entry})"
+    if pt_entry == 0
+      page_address = get_free_physical_address(Page.new)
+      insert_page_of_segment_at_physical_address(v.page, v.segment, page_address)
+      return [hit_or_miss, page_address + v.w]
+    else
+      return ["pf"] if pt_entry == -1
+      return [hit_or_miss, pt_entry + v.w]
+    end
   end
 
   def translate_virtual_addresses(input_string)
@@ -51,17 +124,18 @@ class PhysicalMemory
     return results
   end
 
-  # TODO: see section "The address translation process", use Virtual_address.rb
   def read_virtual_address(virtual_address)
     v = VirtualAddress.new(virtual_address)
     # p "Reading #{virtual_address} #{v.binary_string} #{v.segment} #{v.page} #{v.w}"
     st_entry = @segment_table.entries[v.segment]
+    # p "(ST entry = #{st_entry})"
     return "pf" if st_entry == -1
     return "err" if st_entry == 0
 
     pt_address = @segment_table.entries[v.segment]
     page_table = get_frame(pt_address)
     pt_entry = page_table.entries[v.page]
+    # p "(PT entry = #{pt_entry})"
     return "pf" if pt_entry == -1
     return "err" if pt_entry == 0
 
@@ -70,8 +144,9 @@ class PhysicalMemory
 
   def write_virtual_address(virtual_address)
     v = VirtualAddress.new(virtual_address)
-    # p "Writing #{virtual_address} #{v.binary_string} #{v.segment} #{v.page} #{v.w}"
+    p "Writing #{virtual_address} #{v.binary_string} #{v.segment} #{v.page} #{v.w}"
     st_entry = @segment_table.entries[v.segment]
+    p "(ST entry = #{st_entry})"
     return "pf" if st_entry == -1
     pt_address = st_entry
     if st_entry == 0
@@ -81,6 +156,7 @@ class PhysicalMemory
 
     page_table = get_frame(pt_address)
     pt_entry = page_table.entries[v.page]
+    p "(PT entry = #{pt_entry})"
     if pt_entry == 0
       page_address = get_free_physical_address(Page.new)
       insert_page_of_segment_at_physical_address(v.page, v.segment, page_address)
